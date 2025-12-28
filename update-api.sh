@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 API_DIR="/etc/vpn-api"      # Direktori ROOT proyek
 APP_DIR="$API_DIR/api"       # Direktori APLIKASI
 SERVICE_NAME="vpn-api"
-REPO_URL="https://raw.githubusercontent.com/zxeeds/vip-script/main/api"
+REPO_URL="https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/api"
 
 # --- Fungsi Bantuan ---
 

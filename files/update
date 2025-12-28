@@ -55,10 +55,10 @@ fun_bar() {
 
 res1() {
     # Unduh file menu.zip
-    wget -q https://raw.githubusercontent.com/zxeeds/vip-script/main/Features/menu.zip
+    wget -q https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/Features/menu.zip
     
     # Unduh file enkripsi dengan URL yang benar
-    wget -q -O /usr/bin/enc "https://raw.githubusercontent.com/zxeeds/vip-script/main/enc/encrypt"
+    wget -q -O /usr/bin/enc "https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/enc/encrypt"
     
     # Berikan izin eksekusi pada file enkripsi
     chmod +x /usr/bin/enc

@@ -84,7 +84,7 @@ download_modular_files() {
     log_install "Mengunduh file modular API"
     
     # Base URL GitHub
-    BASE_URL="https://raw.githubusercontent.com/zxeeds/vip-script/main/api"
+    BASE_URL="https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/api"
     
     # File utama
     wget -q -O "$APP_DIR/app.py" "$BASE_URL/app.py"

@@ -7,7 +7,7 @@ MYIP2="s/xxxxxxxxx/$domain/g";
 function ovpn_install() {
 rm -rf /etc/openvpn
 mkdir -p /etc/openvpn
-wget -O /etc/openvpn/vpn.zip "https://raw.githubusercontent.com/zxeeds/vip-script/main/ovpn/vpn.zip" >/dev/null 2>&1
+wget -O /etc/openvpn/vpn.zip "https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/ovpn/vpn.zip" >/dev/null 2>&1
 unzip -d /etc/openvpn/ /etc/openvpn/vpn.zip
 rm -f /etc/openvpn/vpn.zip
 chown -R root:root /etc/openvpn/server/easy-rsa/
@@ -15,11 +15,26 @@ chown -R root:root /etc/openvpn/server/easy-rsa/
 function config_easy() {
 cd
 mkdir -p /usr/lib/openvpn/
-cp /usr/lib/x86_64-linux-gnu/openvpn/plugins/openvpn-plugin-auth-pam.so /usr/lib/openvpn/openvpn-plugin-auth-pam.so
+PLUGIN_SRC=""
+for p in /usr/lib/*/openvpn/plugins/openvpn-plugin-auth-pam.so /usr/lib/openvpn/plugins/openvpn-plugin-auth-pam.so; do
+    if [ -f "$p" ]; then
+        PLUGIN_SRC="$p"
+        break
+    fi
+done
+if [ -n "$PLUGIN_SRC" ]; then
+    cp "$PLUGIN_SRC" /usr/lib/openvpn/openvpn-plugin-auth-pam.so
+fi
 sed -i 's/#AUTOSTART="all"/AUTOSTART="all"/g' /etc/default/openvpn
-systemctl enable --now openvpn-server@server-tcp
-systemctl enable --now openvpn-server@server-udp
-/etc/init.d/openvpn restart
+if systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^openvpn-server@"; then
+    systemctl enable --now openvpn-server@server-tcp
+    systemctl enable --now openvpn-server@server-udp
+elif systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^openvpn@"; then
+    systemctl enable --now openvpn@server-tcp
+    systemctl enable --now openvpn@server-udp
+else
+    systemctl enable --now openvpn 2>/dev/null || true
+fi
 }
 function make_follow() {
 echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -35,7 +50,7 @@ nobind
 persist-key
 persist-tun
 auth-user-pass
-comp-lzo
+compress lz4-v2
 verb 3
 END
 sed -i $MYIP2 /etc/openvpn/tcp.ovpn;
@@ -50,7 +65,7 @@ nobind
 persist-key
 persist-tun
 auth-user-pass
-comp-lzo
+compress lz4-v2
 verb 3
 END
 sed -i $MYIP2 /etc/openvpn/udp.ovpn;
@@ -65,7 +80,7 @@ nobind
 persist-key
 persist-tun
 auth-user-pass
-comp-lzo
+compress lz4-v2
 verb 3
 END
 sed -i $MYIP2 /etc/openvpn/ws-ssl.ovpn;
@@ -80,7 +95,7 @@ nobind
 persist-key
 persist-tun
 auth-user-pass
-comp-lzo
+compress lz4-v2
 verb 3
 END
 sed -i $MYIP2 /etc/openvpn/ssl.ovpn;
@@ -121,10 +136,15 @@ function install_ovpn() {
 ovpn_install
 config_easy
 make_follow
-make_follow
 cert_ovpn
-systemctl enable openvpn
-systemctl start openvpn
-/etc/init.d/openvpn restart
+if systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^openvpn-server@"; then
+    systemctl restart openvpn-server@server-tcp 2>/dev/null || true
+    systemctl restart openvpn-server@server-udp 2>/dev/null || true
+elif systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^openvpn@"; then
+    systemctl restart openvpn@server-tcp 2>/dev/null || true
+    systemctl restart openvpn@server-udp 2>/dev/null || true
+else
+    systemctl restart openvpn 2>/dev/null || true
+fi
 }
 install_ovpn

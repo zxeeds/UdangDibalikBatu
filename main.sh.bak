@@ -79,9 +79,9 @@ echo -e "\e[32mloading...\e[0m"
 clear
 clear
 rm -f /usr/bin/user
-username=$(curl https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/REGIST | grep $MYIP | awk '{print $2}')
+username=$(curl https://raw.githubusercontent.com/zxeeds/vip-script/main/REGIST | grep $MYIP | awk '{print $2}')
 echo "$username" >/usr/bin/user
-expx=$(curl https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/REGIST | grep $MYIP | awk '{print $3}')
+expx=$(curl https://raw.githubusercontent.com/zxeeds/vip-script/main/REGIST | grep $MYIP | awk '{print $3}')
 echo "$expx" >/usr/bin/e
 username=$(cat /usr/bin/user)
 oid=$(cat /usr/bin/ver)
@@ -102,7 +102,7 @@ Exp="$exp"
 mai="datediff "$Exp" "$DATE""
 Info="(${green}Active${NC})"
 Error="(${RED}ExpiRED${NC})"
-Exp1=$(curl https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/REGIST | grep $MYIP | awk '{print $4}')
+Exp1=$(curl https://raw.githubusercontent.com/zxeeds/vip-script/main/REGIST | grep $MYIP | awk '{print $4}')
 if [[ $today < $Exp1 ]]; then
 sts="${Info}"
 else
@@ -110,7 +110,7 @@ sts="${Error}"
 fi
 echo -e "\e[32mloading...\e[0m"
 clear
-REPO="https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/"
+REPO="https://raw.githubusercontent.com/zxeeds/vip-script/main/"
 start=$(date +%s)
 secs_to_human() {
 echo "Installation time : $((${1} / 3600)) hours $(((${1} / 60) % 60)) minute's $((${1} % 60)) seconds"
@@ -134,71 +134,6 @@ echo -e "${Green} # $1 berhasil dipasang"
 echo -e "${green} ─────────────────────────────────────── ${FONT}"
 sleep 2
 fi
-}
-function restart_service() {
-local svc="$1"
-if systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^${svc}\.service$"; then
-    systemctl restart "$svc"
-elif [ -x "/etc/init.d/$svc" ]; then
-    "/etc/init.d/$svc" restart
-fi
-}
-function enable_service() {
-local svc="$1"
-if systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^${svc}\.service$"; then
-    systemctl enable --now "$svc"
-elif [ -x "/etc/init.d/$svc" ]; then
-    "/etc/init.d/$svc" start
-fi
-}
-function detect_net_if() {
-if command -v ip >/dev/null 2>&1; then
-    NET=$(ip -o route get 1.1.1.1 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="dev") {print $(i+1); exit}}')
-    if [ -z "${NET:-}" ]; then
-        NET=$(ip -o route show default 2>/dev/null | awk '{print $5; exit}')
-    fi
-fi
-}
-function apply_nft_rules() {
-if ! command -v nft >/dev/null 2>&1; then
-    return 1
-fi
-if ! nft list table inet vpnfilter >/dev/null 2>&1; then
-    nft add table inet vpnfilter
-fi
-if ! nft list chain inet vpnfilter forward >/dev/null 2>&1; then
-    nft 'add chain inet vpnfilter forward { type filter hook forward priority 0; policy accept; }'
-fi
-if ! nft list table inet vpnnat >/dev/null 2>&1; then
-    nft add table inet vpnnat
-fi
-if ! nft list chain inet vpnnat prerouting >/dev/null 2>&1; then
-    nft 'add chain inet vpnnat prerouting { type nat hook prerouting priority -100; policy accept; }'
-fi
-if ! nft list chain inet vpnfilter input >/dev/null 2>&1; then
-    nft 'add chain inet vpnfilter input { type filter hook input priority 0; policy accept; }'
-fi
-    # Anti-torrent rules (best-effort).
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "get_peers" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "announce_peer" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "find_node" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "BitTorrent" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "BitTorrent protocol" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "peer_id=" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string ".torrent" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "announce.php?passkey=" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "torrent" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "announce" drop 2>/dev/null || true
-    nft add rule inet vpnfilter forward meta l4proto tcp payload @th,0,512 string "info_hash" drop 2>/dev/null || true
-    # UDP 53 redirect + allow 5300.
-    nft add rule inet vpnfilter input udp dport 5300 accept 2>/dev/null || true
-    nft add rule inet vpnnat prerouting udp dport 53 redirect to 5300 2>/dev/null || true
-    # Persist if nftables service exists.
-    if systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^nftables\.service$"; then
-        nft list ruleset > /etc/nftables.conf
-        systemctl enable --now nftables >/dev/null 2>&1 || true
-        systemctl restart nftables >/dev/null 2>&1 || true
-    fi
 }
 function is_root() {
 if [[ 0 == "$UID" ]]; then
@@ -239,31 +174,23 @@ echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-
 echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
 print_success "Directory Xray"
 if [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g') == "ubuntu" ]]; then
-    echo "Setup Dependencies $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
-    sudo apt update -y
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-    fi
-    if [ "${VERSION_ID:-0}" -ge 24 ]; then
-        # Ubuntu 24.04+ uses repo HAProxy (2.8.x), PPA 2.0 is not available.
-        apt-get -y install haproxy
-    else
-        apt-get install --no-install-recommends software-properties-common
-        add-apt-repository ppa:vbernat/haproxy-2.0 -y
-        apt-get -y install haproxy=2.0.\*
-    fi
+echo "Setup Dependencies $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
+sudo apt update -y
+apt-get install --no-install-recommends software-properties-common
+add-apt-repository ppa:vbernat/haproxy-2.0 -y
+apt-get -y install haproxy=2.0.\*
 elif [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g') == "debian" ]]; then
-    echo "Setup Dependencies For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
-    curl https://haproxy.debian.net/bernat.debian.org.gpg |
-    gpg --dearmor >/usr/share/keyrings/haproxy.debian.net.gpg
-    echo deb "[signed-by=/usr/share/keyrings/haproxy.debian.net.gpg]" \
-    http://haproxy.debian.net buster-backports-1.8 main \
-    >/etc/apt/sources.list.d/haproxy.list
-    sudo apt-get update
-    apt-get -y install haproxy=1.8.\*
+echo "Setup Dependencies For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
+curl https://haproxy.debian.net/bernat.debian.org.gpg |
+gpg --dearmor >/usr/share/keyrings/haproxy.debian.net.gpg
+echo deb "[signed-by=/usr/share/keyrings/haproxy.debian.net.gpg]" \
+http://haproxy.debian.net buster-backports-1.8 main \
+>/etc/apt/sources.list.d/haproxy.list
+sudo apt-get update
+apt-get -y install haproxy=1.8.\*
 else
-    echo -e " Your OS Is Not Supported ($(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g') )"
-    exit 1
+echo -e " Your OS Is Not Supported ($(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g') )"
+exit 1
 fi
 }
 clear
@@ -329,6 +256,8 @@ apt install figlet -y
 apt update -y
 apt upgrade -y
 apt dist-upgrade -y
+systemctl enable chronyd
+systemctl restart chronyd
 systemctl enable chrony
 systemctl restart chrony
 chronyc sourcestats -v
@@ -344,7 +273,7 @@ sudo apt-get remove --purge ufw firewalld -y
 sudo apt-get install -y --no-install-recommends software-properties-common
 echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
 echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
-sudo apt-get install -y speedtest-cli vnstat libnss3-dev libnspr4-dev pkg-config libpam0g-dev libcap-ng-dev libcap-ng-utils libselinux1-dev flex bison make libnss3-tools libevent-dev bc rsyslog dos2unix zlib1g-dev libssl-dev libsqlite3-dev sed dirmngr libxml-parser-perl build-essential gcc g++ python3 htop lsof tar wget curl ruby zip unzip p7zip-full python3-pip libc6 util-linux build-essential msmtp-mta ca-certificates bsd-mailx iptables iptables-persistent netfilter-persistent net-tools openssl ca-certificates gnupg gnupg2 ca-certificates lsb-release gcc shc make cmake git screen socat xz-utils apt-transport-https dnsutils cron bash-completion ntpdate chrony jq openvpn easy-rsa
+sudo apt-get install -y speedtest-cli vnstat libnss3-dev libnspr4-dev pkg-config libpam0g-dev libcap-ng-dev libcap-ng-utils libselinux1-dev libcurl4-nss-dev flex bison make libnss3-tools libevent-dev bc rsyslog dos2unix zlib1g-dev libssl-dev libsqlite3-dev sed dirmngr libxml-parser-perl build-essential gcc g++ python htop lsof tar wget curl ruby zip unzip p7zip-full python3-pip libc6 util-linux build-essential msmtp-mta ca-certificates bsd-mailx iptables iptables-persistent netfilter-persistent net-tools openssl ca-certificates gnupg gnupg2 ca-certificates lsb-release gcc shc make cmake git screen socat xz-utils apt-transport-https gnupg1 dnsutils cron bash-completion ntpdate chrony jq openvpn easy-rsa
 print_success "Packet Yang Dibutuhkan"
 }
 clear
@@ -393,8 +322,8 @@ else
     return
 fi
 
-USRSC=$(wget -qO- https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/REGIST | grep $ipsaya | awk '{print $2}')
-EXPSC=$(wget -qO- https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/REGIST | grep $ipsaya | awk '{print $3}')
+USRSC=$(wget -qO- https://raw.githubusercontent.com/zxeeds/vip-script/main/REGIST | grep $ipsaya | awk '{print $2}')
+EXPSC=$(wget -qO- https://raw.githubusercontent.com/zxeeds/vip-script/main/REGIST | grep $ipsaya | awk '{print $3}')
 TIMEZONE=$(printf '%(%H:%M:%S)T')
 TEXT="
 <code>────────────────────</code>
@@ -568,7 +497,7 @@ print_success "Password SSH"
 function udp_mini(){
 clear
 print_install "Memasang Service limit Quota"
-wget https://raw.githubusercontent.com/zxeeds/UdangDibalikBatu/main/files/limit.sh && chmod +x limit.sh && ./limit.sh
+wget https://raw.githubusercontent.com/zxeeds/vip-script/main/files/limit.sh && chmod +x limit.sh && ./limit.sh
 cd
 wget -q -O /usr/bin/limit-ip "${REPO}files/limit-ip"
 chmod +x /usr/bin/*
@@ -652,7 +581,9 @@ clear
 print_install "Memasang SSHD"
 wget -q -O /etc/ssh/sshd_config "${REPO}files/sshd" >/dev/null 2>&1
 chmod 700 /etc/ssh/sshd_config
-restart_service ssh
+/etc/init.d/ssh restart
+systemctl restart ssh
+/etc/init.d/ssh status
 print_success "SSHD"
 }
 clear
@@ -662,7 +593,8 @@ print_install "Menginstall Dropbear"
 apt-get install dropbear -y > /dev/null 2>&1
 wget -q -O /etc/default/dropbear "${REPO}cfg/dropbear.conf"
 chmod +x /etc/default/dropbear
-restart_service dropbear
+/etc/init.d/dropbear restart
+/etc/init.d/dropbear status
 print_success "Dropbear"
 }
 clear
@@ -670,24 +602,19 @@ function ins_vnstat(){
 clear
 print_install "Menginstall Vnstat"
 apt -y install vnstat > /dev/null 2>&1
-restart_service vnstat
+/etc/init.d/vnstat restart
 apt -y install libsqlite3-dev > /dev/null 2>&1
 wget https://humdi.net/vnstat/vnstat-2.6.tar.gz
 tar zxvf vnstat-2.6.tar.gz
 cd vnstat-2.6
 ./configure --prefix=/usr --sysconfdir=/etc && make && make install
 cd
-if [ -z "${NET:-}" ]; then
-    detect_net_if
-fi
-if [ -z "${NET:-}" ]; then
-    NET="eth0"
-fi
 vnstat -u -i $NET
 sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
 chown vnstat:vnstat /var/lib/vnstat -R
 systemctl enable vnstat
-restart_service vnstat
+/etc/init.d/vnstat restart
+/etc/init.d/vnstat status
 rm -f /root/vnstat-2.6.tar.gz
 rm -rf /root/vnstat-2.6
 print_success "Vnstat"
@@ -696,13 +623,7 @@ function ins_openvpn(){
 clear
 print_install "Menginstall OpenVPN"
 wget ${REPO}files/openvpn &&  chmod +x openvpn && ./openvpn
-if systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^openvpn-server@"; then
-    systemctl restart openvpn-server@server 2>/dev/null || true
-elif systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^openvpn@"; then
-    systemctl restart openvpn@server 2>/dev/null || true
-else
-    restart_service openvpn
-fi
+/etc/init.d/openvpn restart
 print_success "OpenVPN"
 }
 function ins_backup(){
@@ -843,24 +764,30 @@ function ins_epro(){
     wget -O /usr/sbin/ftvpn "${REPO}files/ftvpn" >/dev/null 2>&1
     chmod +x /usr/sbin/ftvpn
     
-    if ! apply_nft_rules; then
-        # Fallback iptables rules if nft is not available.
-        iptables-save > /etc/iptables.backup
-        iptables -A FORWARD -m string --string "get_peers" --algo bm -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --string "announce_peer" --algo bm -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --string "find_node" --algo bm -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string "BitTorrent" -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string "peer_id=" -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string ".torrent" -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string "torrent" -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string "announce" -j DROP 2>/dev/null || true
-        iptables -A FORWARD -m string --algo bm --string "info_hash" -j DROP 2>/dev/null || true
-        iptables-save > /etc/iptables.up.rules
-        netfilter-persistent save 2>/dev/null || true
-        netfilter-persistent reload 2>/dev/null || true
-    fi
+    # PERBAIKI IPTABLES RULES - Backup dulu
+    iptables-save > /etc/iptables.backup
+    
+    # Tambahkan rules anti-torrent dengan aman
+    iptables -A FORWARD -m string --string "get_peers" --algo bm -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --string "announce_peer" --algo bm -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --string "find_node" --algo bm -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string "BitTorrent" -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string "peer_id=" -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string ".torrent" -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string "torrent" -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string "announce" -j DROP 2>/dev/null || true
+    iptables -A FORWARD -m string --algo bm --string "info_hash" -j DROP 2>/dev/null || true
+    
+    # PERBAIKI SAVE DAN RESTORE
+    iptables-save > /etc/iptables.up.rules
+    # HAPUS baris yang bermasalah:
+    # iptables-restore -t < /etc/iptables.up.rules  # ← HAPUS INI
+    
+    # Gunakan netfilter-persistent saja
+    netfilter-persistent save 2>/dev/null || true
+    netfilter-persistent reload 2>/dev/null || true
     
     cd
     apt autoclean -y >/dev/null 2>&1
@@ -871,26 +798,26 @@ function ins_epro(){
 function ins_restart(){
 clear
 print_install "Restarting  All Packet"
-restart_service nginx
-restart_service openvpn
-restart_service ssh
-restart_service dropbear
-restart_service fail2ban
-restart_service vnstat
+/etc/init.d/nginx restart
+/etc/init.d/openvpn restart
+/etc/init.d/ssh restart
+/etc/init.d/dropbear restart
+/etc/init.d/fail2ban restart
+/etc/init.d/vnstat restart
 systemctl restart haproxy
-restart_service cron
+/etc/init.d/cron restart
 systemctl daemon-reload
 systemctl start netfilter-persistent
-enable_service nginx
-enable_service xray
-enable_service rc-local
-enable_service dropbear
-enable_service openvpn
-enable_service cron
-enable_service haproxy
-enable_service netfilter-persistent
-enable_service ws
-enable_service fail2ban
+systemctl enable --now nginx
+systemctl enable --now xray
+systemctl enable --now rc-local
+systemctl enable --now dropbear
+systemctl enable --now openvpn
+systemctl enable --now cron
+systemctl enable --now haproxy
+systemctl enable --now netfilter-persistent
+systemctl enable --now ws
+systemctl enable --now fail2ban
 history -c
 echo "unset HISTFILE" >> /etc/profile
 cd
@@ -964,22 +891,9 @@ EOF
 echo "/bin/false" >>/etc/shells
 echo "/usr/sbin/nologin" >>/etc/shells
 cat >/etc/rc.local <<EOF
-if command -v nft >/dev/null 2>&1; then
-  nft list table inet vpnfilter >/dev/null 2>&1 || nft add table inet vpnfilter
-  nft list chain inet vpnfilter input >/dev/null 2>&1 || nft 'add chain inet vpnfilter input { type filter hook input priority 0; policy accept; }'
-  nft list table inet vpnnat >/dev/null 2>&1 || nft add table inet vpnnat
-  nft list chain inet vpnnat prerouting >/dev/null 2>&1 || nft 'add chain inet vpnnat prerouting { type nat hook prerouting priority -100; policy accept; }'
-  nft add rule inet vpnfilter input udp dport 5300 accept 2>/dev/null || true
-  nft add rule inet vpnnat prerouting udp dport 53 redirect to 5300 2>/dev/null || true
-  if systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -q "^nftables\.service$"; then
-    nft list ruleset > /etc/nftables.conf
-    systemctl restart nftables >/dev/null 2>&1 || true
-  fi
-else
-  iptables -I INPUT -p udp --dport 5300 -j ACCEPT
-  iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5300
-  systemctl restart netfilter-persistent
-fi
+iptables -I INPUT -p udp --dport 5300 -j ACCEPT
+iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5300
+systemctl restart netfilter-persistent
 exit 0
 EOF
 chmod +x /etc/rc.local
